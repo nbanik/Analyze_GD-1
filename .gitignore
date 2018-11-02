@@ -1,10 +1,6 @@
-GD1-DR2-APW
-gd1-with-masks.fits
-gd1-with-masks_old.fits
-analyze_GD-1.ipynb
-run_on_cluster
+pkl_files
 GD1sampled_bar
 GD1sampled_spiral
 GMC_impacted_stream
 dens_Omega
-pkl_files
+run_on_cluster
