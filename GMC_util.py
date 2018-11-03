@@ -12,6 +12,7 @@ import astropy.units as u
 from galpy.orbit import Orbit
 import pal5_util
 import pal5_util_MWfit
+import gd1_util
 import MWPotential2014Likelihood
 from MWPotential2014Likelihood import _REFR0, _REFV0
 
@@ -316,6 +317,47 @@ def aparxv_stream_from_multiple_pkl(pot=MWPotential2014,sampling=4096,npart=64,t
            
     return (timpact,apar,x_stream,y_stream,z_stream,vx_stream,vy_stream,vz_stream)
     
+
+## works only for GD-1 stream, will combine this later to the general function for any stream
+def aparxv_GD1_stream_from_multiple_pkl(pot=MWPotential2014,sampling=7400,npart=64,td=9.0):
+    
+    '''
+    compute apar,x,v from one or multiple pickle files
+    pkl_fname : without fragment index and extension
+    '''
+     
+    sdf_smooth= gd1_util.setup_gd1model(pot=pot)
+    pkl_file='pkl_files/gd1pepper_Plummer_td{}_{}sampling_MW2014'.format(td,sampling)
+    pkl_file=pkl_file + '_{}.pkl'
+        
+    apar=[]
+    x_stream=[]
+    y_stream=[]
+    z_stream=[]
+    vx_stream=[]
+    vy_stream=[]
+    vz_stream=[]
+    timpact=[]
+    
+    for ii in range(npart):
+        pkl_fname=pkl_file.format(ii)
+        with open(pkl_fname,'rb') as savefile:
+                    
+            print (pkl_fname)
+
+            sdf_pepper= pickle.load(savefile,encoding='latin1')
+            ap,x,y,z,vx,vy,vz= aparxv_stream(sdf_smooth,sdf_pepper)
+            apar.extend(ap)
+            x_stream.extend(x)
+            y_stream.extend(y)
+            z_stream.extend(z)
+            vx_stream.extend(vx)
+            vy_stream.extend(vy)
+            vz_stream.extend(vz)
+            timpact.extend(sdf_pepper._timpact)
+           
+    return (timpact,apar,x_stream,y_stream,z_stream,vx_stream,vy_stream,vz_stream)
+    
     
 def compute_impact_parameters_GMC(timp,a,xs,ys,zs,pot=MWPotential2014,npart=64,sampling_low_file='',imp_fac=5.,Mmin=10**6.,rand_rotate=False,td=5.):
     
@@ -336,8 +378,8 @@ def compute_impact_parameters_GMC(timp,a,xs,ys,zs,pot=MWPotential2014,npart=64,s
         bovy_convert_mass=bovy_conversion.mass_in_msol(tvo,_REFR0)
         
     else : 
-        #integrate their orbits 5 Gyr back,
-        t_age= np.linspace(0.,5.,1001)/bovy_conversion.time_in_Gyr(_REFV0,_REFR0)
+        #integrate their orbits td Gyr back,
+        t_age= np.linspace(0.,td,1001)/bovy_conversion.time_in_Gyr(_REFV0,_REFR0)
         bovy_convert_mass=bovy_conversion.mass_in_msol(_REFV0,_REFR0)
        
     #load the GMCs
