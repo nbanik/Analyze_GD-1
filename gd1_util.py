@@ -10,17 +10,22 @@ from gd1_util_MWhaloshape import phi12_to_lb_6d
 R0, V0= 8., 220.
 def setup_gd1model(leading=True,pot=MWPotential2014,
                    timpact=None,
-                   hernquist=True,
+                   hernquist=True,new_orb_lb=None,isob=0.8,
                    age=9.,
                    singleImpact=False,
                    length_factor=1.,
                    **kwargs):
     #lp= LogarithmicHaloPotential(normalize=1.,q=0.9)
-    aAI= actionAngleIsochroneApprox(pot=pot,b=0.8)
+    aAI= actionAngleIsochroneApprox(pot=pot,b=isob)
     #obs= Orbit([1.56148083,0.35081535,-1.15481504,0.88719443,
     #            -0.47713334,0.12019596])
     #progenitor pos and vel from Bovy 1609.01298 and with corrected proper motion
-    obs=Orbit(phi12_to_lb_6d(0,-0.82,10.1,-8.5,-2.15,-257.),lb=True,solarmotion=[-11.1,24.,7.25],ro=8.,vo=220.)
+    
+    if new_orb_lb is None :
+        obs=Orbit(phi12_to_lb_6d(0,-0.82,10.1,-8.5,-2.15,-257.),lb=True,solarmotion=[-11.1,24.,7.25],ro=8.,vo=220.)
+        
+    else:
+        obs=Orbit(new_orb_lb,lb=True,solarmotion=[-11.1,24.,7.25],ro=8.,vo=220.)
     
     sigv= 0.365/2.*(9./age) #km/s, /2 bc tdis x2, adjust for diff. age
     if timpact is None:
