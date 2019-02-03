@@ -52,6 +52,6 @@ def setup_gd1model(leading=True,pot=MWPotential2014,
                             spline_order=1,
                             hernquist=hernquist,
                             length_factor=length_factor)
-    #sdf.turn_physical_off()  #original
-    obs.turn_physical_off()
+    sdf.turn_physical_off()  #original
+    #obs.turn_physical_off()
     return sdf
