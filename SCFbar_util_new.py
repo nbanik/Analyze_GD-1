@@ -201,7 +201,7 @@ def MWPotentialSCFbar_grow(mbar,Acos,Asin,rs=1.,normalize=False,pat_speed=40.,fi
         return (growbarpot,MWP2014SCFnobar)
         
         
-def sample_streamdf_noprog(N,barpot,nobarpot,stream='Pal5',fo='sample_trailing.dat',write=False,trailing=True):
+def sample_streamdf_noprog(nsamp,barpot,nobarpot,stream='Pal5',sigv=0.3,prog=0.,trail_dir='',fo='sample_trailing.dat',write=False,trailing=True):
     
         '''
         Sample N points for a given stream using the freq-angle framework
@@ -216,32 +216,42 @@ def sample_streamdf_noprog(N,barpot,nobarpot,stream='Pal5',fo='sample_trailing.d
             sdf_leading= pal5_util.setup_pal5model(pot=nobarpot,leading=True)
             
         elif stream == 'GD1' :
-            sdf_trailing= gd1_util.setup_gd1model(pot=nobarpot,leading=False)
-            sdf_leading= gd1_util.setup_gd1model(pot=nobarpot)
+            if prog == 0:
+                sdf_trailing= gd1_util.setup_gd1model(pot=nobarpot,leading=False)
+                sdf_leading= gd1_util.setup_gd1model(pot=nobarpot)
+                
+            elif prog == -40. :
+                new_orb_lb=[188.04928416766532, 51.848594007807456, 7.559027173643999, 12.260258757214746, -5.140630283489461, 7.162732847549563]
+                isob=0.45
+                td=3.2
+                sdf_trailing= gd1_util.setup_gd1model(pot=nobarpot,leading=False,age=td,new_orb_lb=new_orb_lb,isob=isob,sigv=sigv)
+                sdf_leading= gd1_util.setup_gd1model(pot=nobarpot,age=td,new_orb_lb=new_orb_lb,isob=isob,sigv=sigv)
+                
             
         
         fo= stream + fo    
         if trailing :
             
-            R,vR,vT,z,vz,phi,dt= sdf_trailing.sample(n=N,returndt=True)
-            fo=open(fo,'w')
+            R,vR,vT,z,vz,phi,dt= sdf_trailing.sample(n=nsamp,returndt=True)
+            fo=open(trail_dir + fo,'w')
           
         
         else :
             
-            R,vR,vT,z,vz,phi,dt= sdf_leading.sample(n=N,returndt=True)
+            R,vR,vT,z,vz,phi,dt= sdf_leading.sample(n=nsamp,returndt=True)
+            lead_dir=trail_dir.replace('trailing','leading')
             fo_lead=fo.replace('trailing','leading')
-            fo=open(fo_lead,'w')
+            fo=open(lead_dir + fo_lead,'w')
               
-        finalR= numpy.empty(N)
-        finalvR=numpy.empty(N)
-        finalvT=numpy.empty(N)
-        finalvz=numpy.empty(N)
-        finalphi= numpy.empty(N)
-        finalz= numpy.empty(N)
-        tt=numpy.empty(N)
+        finalR= numpy.empty(nsamp)
+        finalvR=numpy.empty(nsamp)
+        finalvT=numpy.empty(nsamp)
+        finalvz=numpy.empty(nsamp)
+        finalphi= numpy.empty(nsamp)
+        finalz= numpy.empty(nsamp)
+        tt=numpy.empty(nsamp)
 
-        for ii in range(N):
+        for ii in range(nsamp):
 
                 o= Orbit([R[ii],vR[ii],vT[ii],z[ii],vz[ii],phi[ii]])
                 o.turn_physical_off()
@@ -265,7 +275,7 @@ def sample_streamdf_noprog(N,barpot,nobarpot,stream='Pal5',fo='sample_trailing.d
         if write :
             fo.write("#R   phi   z   vR    vT    vz    ts" + "\n")
         
-            for jj in range(N):
+            for jj in range(nsamp):
                 fo.write(str(finalR[jj]) + "   " + str(finalphi[jj]) + "   " + str(finalz[jj]) + "   " + str(finalvR[jj]) + "   " + str(finalvT[jj]) + "   " + str(finalvz[jj]) + "   " + str(tt[jj]) + "\n")
             
             fo.close()
@@ -274,7 +284,7 @@ def sample_streamdf_noprog(N,barpot,nobarpot,stream='Pal5',fo='sample_trailing.d
             
             return (finalR, finalphi, finalz, finalvR, finalvT, finalvz, tt)
             
-def sample_streamdf_smooth(N,nobarpot,stream='Pal5',fo='sample_trailing.dat',write=False,trailing=True):
+def sample_streamdf_smooth(N,nobarpot,stream='Pal5',prog=0.,sigv=0.3,trail_dir='',fo='sample_trailing.dat',write=False,trailing=True):
     
         '''
         Sample N points for a given stream using the freq-angle framework
@@ -289,22 +299,31 @@ def sample_streamdf_smooth(N,nobarpot,stream='Pal5',fo='sample_trailing.dat',wri
             sdf_leading= pal5_util.setup_pal5model(pot=nobarpot,leading=True)
             
         elif stream == 'GD1' :
-            sdf_trailing= gd1_util.setup_gd1model(pot=nobarpot,leading=False)
-            sdf_leading= gd1_util.setup_gd1model(pot=nobarpot)
+            if prog == 0:
+                sdf_trailing= gd1_util.setup_gd1model(pot=nobarpot,leading=False)
+                sdf_leading= gd1_util.setup_gd1model(pot=nobarpot)
+                
+            elif prog == -40. :
+                new_orb_lb=[188.04928416766532, 51.848594007807456, 7.559027173643999, 12.260258757214746, -5.140630283489461, 7.162732847549563]
+                isob=0.45
+                td=3.2
+                sdf_trailing= gd1_util.setup_gd1model(pot=nobarpot,leading=False,age=td,new_orb_lb=new_orb_lb,isob=isob,sigv=sigv)
+                sdf_leading= gd1_util.setup_gd1model(pot=nobarpot,age=td,new_orb_lb=new_orb_lb,isob=isob,sigv=sigv)
             
         
         fo= stream + fo    
         if trailing :
             
             R,vR,vT,z,vz,phi,dt= sdf_trailing.sample(n=N,returndt=True)
-            fo=open(fo,'w')
+            fo=open(trail_dir + fo,'w')
           
         
         else :
             
             R,vR,vT,z,vz,phi,dt= sdf_leading.sample(n=N,returndt=True)
+            lead_dir=trail_dir.replace('trailing','leading')
             fo_lead=fo.replace('trailing','leading')
-            fo=open(fo_lead,'w')
+            fo=open(lead_dir + fo_lead,'w')
               
               
         if write :
@@ -319,7 +338,7 @@ def sample_streamdf_smooth(N,nobarpot,stream='Pal5',fo='sample_trailing.dat',wri
             
             return (R, phi, z, vR, vT, vz, dt)            
             
-def sample_spraydf(N,barpot,stream='Pal5',fo='sample_trailing.dat',trailing=True, Mprogenitor = 50000., tage= 5.,write=False):
+def sample_spraydf(Nsamp,barpot,stream='Pal5',fo='sample_trailing.dat',trail_dir='',prog=0.,trailing=True, Mprogenitor = 50000., tage= 5.,write=False):
     
         '''
         Sample N points for a given stream using the Particle-Spray framework
@@ -335,15 +354,23 @@ def sample_spraydf(N,barpot,stream='Pal5',fo='sample_trailing.dat',trailing=True
             orb=Orbit(o._orb.vxvv)
             
         elif stream == 'GD1':
-            o=Orbit(phi12_to_lb_6d(0,-0.82,10.1,-8.5,-2.15,-257.),lb=True,solarmotion=[-11.1,24.,7.25],ro=8.,vo=220.)
-            #convert to galpy units
-            orb=Orbit(o._orb.vxvv)
-
-        
+            if prog == 0.:
+                o=Orbit(phi12_to_lb_6d(0,-0.82,10.1,-8.5,-2.15,-257.),lb=True,solarmotion=[-11.1,24.,7.25],ro=8.,vo=220.)
+                #convert to galpy units
+                orb=Orbit(o._orb.vxvv)
+                                           
+            elif prog == -40. :
+                new_orb_lb=[188.04928416766532, 51.848594007807456, 7.559027173643999, 12.260258757214746, -5.140630283489461, 7.162732847549563]
+                o=Orbit(new_orb_lb,lb=True,solarmotion=[-11.1,24.,7.25],ro=8.,vo=220.)
+                #convert to galpy units
+                orb=Orbit(o._orb.vxvv)
+                
+                
+                        
         fo= stream + fo
         if trailing :
             spdft= streamspraydf.streamspraydf(Mprogenitor*u.Msun,progenitor=orb,pot=barpot,leading=False,tdisrupt=tage*u.Gyr)
-            RvR,dt= spdft.sample(n=N,returndt=True,integrate=True)
+            RvR,dt= spdft.sample(n=Nsamp,returndt=True,integrate=True)
             R=RvR[0]
             vR=RvR[1]
             vT=RvR[2]
@@ -351,12 +378,12 @@ def sample_spraydf(N,barpot,stream='Pal5',fo='sample_trailing.dat',trailing=True
             vz=RvR[4]
             phi=RvR[5]
             
-            fo=open(fo,'w')
+            fo=open(trail_dir + fo,'w')
             
      
         else :
             spdf= streamspraydf.streamspraydf(Mprogenitor*u.Msun,progenitor=orb,pot=barpot,tdisrupt=tage*u.Gyr)
-            RvR,dt= spdf.sample(n=N,returndt=True,integrate=True)
+            RvR,dt= spdf.sample(n=Nsamp,returndt=True,integrate=True)
             R=RvR[0]
             vR=RvR[1]
             vT=RvR[2]
@@ -364,14 +391,15 @@ def sample_spraydf(N,barpot,stream='Pal5',fo='sample_trailing.dat',trailing=True
             vz=RvR[4]
             phi=RvR[5]
             fo_lead=fo.replace('trailing','leading')
-            fo=open(fo_lead,'w')
+            lead_dir=trail_dir.replace('trailing','leading')
+            fo=open(lead_dir + fo_lead,'w')
               
         
         if write :
                            
             fo.write("#R   phi   z   vR    vT    vz    ts" + "\n")
         
-            for jj in range(N):
+            for jj in range(Nsamp):
                 fo.write(str(R[jj]) + "   " + str(phi[jj]) + "   " + str(z[jj]) + "   " + str(vR[jj]) + "   " + str(vT[jj]) + "   " + str(vz[jj]) + "   " + str(dt[jj]) + "\n")
             
             fo.close()
@@ -381,7 +409,7 @@ def sample_spraydf(N,barpot,stream='Pal5',fo='sample_trailing.dat',trailing=True
             return (R,phi,z,vR,vT,vz,dt)
             
             
-def sample_spraydf_noprog(N,barpot,nobarpot,fo='sample_trailing.dat',stream='Pal5',Mprogenitor = 50000., tage= 5.,write=False, trailing=True):
+def sample_spraydf_noprog(N,barpot,nobarpot,fo='sample_trailing.dat',stream='Pal5',trail_dir='',prog=0.,Mprogenitor = 50000., tage= 5.,write=False, trailing=True):
     
         '''
         Sample N points for a given stream using the Particle-Spray framework
@@ -396,10 +424,18 @@ def sample_spraydf_noprog(N,barpot,nobarpot,fo='sample_trailing.dat',stream='Pal
             orb=Orbit(o._orb.vxvv)
             
         elif stream == 'GD1':
-            o=Orbit(phi12_to_lb_6d(0,-0.82,10.1,-8.5,-2.15,-257.),lb=True,solarmotion=[-11.1,24.,7.25],ro=8.,vo=220.)
-            #convert to galpy units
-            orb=Orbit(o._orb.vxvv)
+            if prog == 0.:
+                o=Orbit(phi12_to_lb_6d(0,-0.82,10.1,-8.5,-2.15,-257.),lb=True,solarmotion=[-11.1,24.,7.25],ro=8.,vo=220.)
+                #convert to galpy units
+                orb=Orbit(o._orb.vxvv)
+                                           
+            elif prog == -40. :
+                new_orb_lb=[188.04928416766532, 51.848594007807456, 7.559027173643999, 12.260258757214746, -5.140630283489461, 7.162732847549563]
+                o=Orbit(new_orb_lb,lb=True,solarmotion=[-11.1,24.,7.25],ro=8.,vo=220.)
+                #convert to galpy units
+                orb=Orbit(o._orb.vxvv)
 
+        fo=stream + fo
         if trailing :
             spdft= streamspraydf.streamspraydf(Mprogenitor*u.Msun,progenitor=orb,pot=nobarpot,leading=False,tdisrupt=tage*u.Gyr)
             RvR,dt= spdft.sample(n=N,returndt=True,integrate=False)
@@ -410,7 +446,7 @@ def sample_spraydf_noprog(N,barpot,nobarpot,fo='sample_trailing.dat',stream='Pal
             vz=RvR[4]
             phi=RvR[5]
             
-            fo=open(fo,'w')
+            fo=open(trail_dir + fo,'w')
             
      
         else :
@@ -423,7 +459,8 @@ def sample_spraydf_noprog(N,barpot,nobarpot,fo='sample_trailing.dat',stream='Pal
             vz=RvR[4]
             phi=RvR[5]
             fo_lead=fo.replace('trailing','leading')
-            fo=open(fo_lead,'w')
+            lead_dir=trail_dir.replace('trailing','leading')
+            fo=open(lead_dir + fo_lead,'w')
               
         finalR= numpy.empty(N)
         finalvR=numpy.empty(N)
