@@ -23,7 +23,7 @@ ro=8.
 vo=220.
 
 
-def spiral_arms_potential(FR_frac=1.,t_on=-5.,tgrow=2,tstream=5.,cos=True,N=2,pat_speed=24.5,pitch_angle=9.9,r_ref=8.,Rs=7.,phi0=26.,H=0.3):
+def spiral_arms_potential(FR_frac=1.,t_on=-5.,tgrow=2,tstream=5.,axi_pot=MWPotential2014,cos=True,N=2,pat_speed=24.5,pitch_angle=9.9,r_ref=8.,Rs=7.,phi0=26.,H=0.3):
     
     
         phi0=np.radians(phi0)
@@ -59,7 +59,7 @@ def spiral_arms_potential(FR_frac=1.,t_on=-5.,tgrow=2,tstream=5.,cos=True,N=2,pa
         max_FR_nonaxi= interp_FR_nonaxi(max_phi)[0]
                 
         #compute the radial force due to the axisymmetric potential
-        FR_axi=potential.evaluateRforces(MWPotential2014,R=8./ro,z=0.,t=0.)
+        FR_axi=potential.evaluateRforces(axi_pot,R=8./ro,z=0.,t=0.)
 
         #compute the correct amplitude
         amp= numpy.abs(FR_frac*FR_axi/max_FR_nonaxi)
@@ -77,7 +77,7 @@ def spiral_arms_potential(FR_frac=1.,t_on=-5.,tgrow=2,tstream=5.,cos=True,N=2,pa
         #if t_on >= t_pal5_age, then Pal 5 sees the spirals always on
         if np.abs(t_on)*bovy_conversion.time_in_Gyr(vo,ro) >= tstream :
             print ('not growing spiral')
-            MWspiralpot = MWPotential2014 + [spiralpot]
+            MWspiralpot = axi_pot + [spiralpot]
             turn_physical_off(MWspiralpot)
             
             return (MWspiralpot)
@@ -90,8 +90,74 @@ def spiral_arms_potential(FR_frac=1.,t_on=-5.,tgrow=2,tstream=5.,cos=True,N=2,pa
 
             spiralpot_grow=DehnenWrap(amp=1.,pot=spiralpot,tform=tform,tsteady=tsteady)  
             turn_physical_off(spiralpot_grow)
-            MWspiralpot = MWPotential2014 + [spiralpot_grow]
+            MWspiralpot = axi_pot + [spiralpot_grow]
             return MWspiralpot
+            
+def spiral_only_potential(FR_frac=1.,t_on=-5.,tgrow=2,tstream=5.,axi_pot=MWPotential2014,cos=True,N=2,pat_speed=24.5,pitch_angle=9.9,r_ref=8.,Rs=3.,phi0=26.,H=0.3):
+    phi0=np.radians(phi0)
+    omega=pat_speed*(ro/vo)
+    alpha=numpy.radians(pitch_angle)
+    r_ref/=ro
+    Rs/=ro
+    H/=ro
+
+    # percentage of the radial force to set the amplitude of the spiral
+    FR_frac=FR_frac*0.01  
+
+    if cos :
+        Cs=[8./(3.*numpy.pi),0.5,8./(15.*numpy.pi)]
+
+    else :
+        Cs=[1]
+
+    #compute max radial force for amp=1
+    pp=np.linspace(0.,2.*np.pi,1000)
+    FR_nonaxi=[]
+    spiral_pot_amp1=SpiralArmsPotential(amp=1.,N=N,omega=omega,alpha=alpha,phi_ref=phi0,r_ref=r_ref,H=H,Rs=Rs,Cs=Cs)
+    turn_physical_off(spiral_pot_amp1)
+
+    for ii in range(len(pp)):
+         FR_nonaxi.append(potential.evaluateRforces(spiral_pot_amp1,R=8./ro,z=0.,phi=pp[ii],t=0.))
+
+    interp_FR_nonaxi= interpolate.InterpolatedUnivariateSpline(pp,FR_nonaxi)
+
+    #fmin, because radial force is negative
+    max_phi=optimize.fmin(interp_FR_nonaxi, 0.,disp=0)
+
+    max_FR_nonaxi= interp_FR_nonaxi(max_phi)[0]
+
+    #compute the radial force due to the axisymmetric potential
+    FR_axi=potential.evaluateRforces(axi_pot,R=8./ro,z=0.,t=0.)
+
+    #compute the correct amplitude
+    amp= numpy.abs(FR_frac*FR_axi/max_FR_nonaxi)
+
+    #setup spiral potential with correct amplitude
+    spiralpot=SpiralArmsPotential(amp=amp,N=N,omega=omega,alpha=alpha,phi_ref=phi0,r_ref=r_ref,H=H,Rs=Rs,Cs=Cs)
+
+    #grow the spirals
+
+    Tspiral=2.*np.pi/np.abs(omega) #bar period in galpy units.
+    t_on=t_on/bovy_conversion.time_in_Gyr(vo,ro)
+    tsteady=tgrow*Tspiral
+    tform = t_on - tsteady #- because past is negative
+
+    #if t_on >= t_pal5_age, then Pal 5 sees the spirals always on
+    if np.abs(t_on)*bovy_conversion.time_in_Gyr(vo,ro) >= tstream :
+        print ('not growing spiral')
+        turn_physical_off(spiralpot)
+        return (spiralpot)
+
+    elif np.abs(tform)*bovy_conversion.time_in_Gyr(vo,ro) >= tstream:
+        print ("tform > age of stream")
+
+    elif np.abs(tform)*bovy_conversion.time_in_Gyr(vo,ro) < tstream :
+        print ('growing spiral')
+
+        spiralpot_grow=DehnenWrap(amp=1.,pot=spiralpot,tform=tform,tsteady=tsteady)  
+        turn_physical_off(spiralpot_grow)
+        
+        return (spiralpot_grow)
 
 def sample_streamdf_noprog_spiral(Nsamples,spiralpot,stream='GD1',nospiralpot=MWPotential2014,fo='spiral_trailing.dat',trailing=True,write=False):
         
